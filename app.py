@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import librosa
-import sounddevice as sd
 import scipy.io.wavfile as wav
 import pickle
 import random
@@ -105,7 +104,7 @@ def extract_features(audio=None, sr=None, n_mfcc=40, augment=True):
         if augment:
             y_original = y_speech
             pitch_shift = random.uniform(-2, 2)
-            y_pitch = librosa.effects.pitch_shift(y_speech, sr=sr, n_steps=pitch_shift)
+            y_pitch = librosa.effects.pitch_shift(y=y_speech, sr=sr, n_steps=pitch_shift)
             time_stretch = random.uniform(0.8, 1.2)
             y_stretch = librosa.effects.time_stretch(y_speech, rate=time_stretch)
             for audio_var in [y_original, y_pitch, y_stretch]:
