@@ -198,13 +198,25 @@
             formData.append('speaker_id', speakerId);
             formData.append('audio', audioFile);
 
-            console.log('Sending POST request to /register with speaker_id:', speakerId);
+            console.log('Sending POST request to /register', {
+                speakerId: speakerId,
+                audioFileName: audioFile.name,
+                method: 'POST'
+            });
+
             try {
                 const response = await fetch('/register', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
-                console.log('Response status:', response.status);
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                });
                 const result = await response.json();
                 console.log('Response data:', result);
                 if (response.ok) {
@@ -220,12 +232,13 @@
                     resultDiv.innerText = `Error: ${result.detail || 'Unknown error'}`;
                     resultDiv.className = 'error';
                     if (response.status === 405) {
-                        resultDiv.innerText += ' (Method Not Allowed: Check if POST is used)';
+                        resultDiv.innerText += ' (Method Not Allowed: Server rejected POST request)';
+                        console.error('Method Not Allowed: Check backend configuration for /register');
                     }
                 }
             } catch (err) {
                 console.error('Fetch error:', err);
-                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
                 resultDiv.className = 'error';
             }
         }
@@ -250,7 +263,10 @@
                     method: 'POST',
                     body: formData
                 });
-                console.log('Response status:', response.status);
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 const result = await response.json();
                 console.log('Response data:', result);
                 if (response.ok) {
@@ -262,7 +278,7 @@
                 }
             } catch (err) {
                 console.error('Fetch error:', err);
-                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
                 resultDiv.className = 'error';
             }
         }
@@ -283,13 +299,16 @@
             formData.append('speaker_id', speakerId);
             formData.append('audio', audioFileInput.files[0]);
 
-            console.log('Sending POST request to /verify with speaker_id:', speakerId);
+            console.log('Sending POST request to /verify', { speakerId });
             try {
                 const response = await fetch('/verify', {
                     method: 'POST',
                     body: formData
                 });
-                console.log('Response status:', response.status);
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 const result = await response.json();
                 console.log('Response data:', result);
                 if (response.ok) {
@@ -301,7 +320,7 @@
                 }
             } catch (err) {
                 console.error('Fetch error:', err);
-                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
                 resultDiv.className = 'error';
             }
         }
@@ -322,7 +341,10 @@
                 const response = await fetch(`/delete_speaker/${speakerId}`, {
                     method: 'DELETE'
                 });
-                console.log('Response status:', response.status);
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 const result = await response.json();
                 console.log('Response data:', result);
                 if (response.ok) {
@@ -336,7 +358,7 @@
                 }
             } catch (err) {
                 console.error('Fetch error:', err);
-                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
                 resultDiv.className = 'error';
             }
         }
@@ -347,7 +369,10 @@
             console.log('Sending GET request to /speakers');
             try {
                 const response = await fetch('/speakers');
-                console.log('Response status:', response.status);
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 const result = await response.json();
                 console.log('Response data:', result);
                 if (response.ok) {
@@ -363,7 +388,7 @@
                 }
             } catch (err) {
                 console.error('Fetch error:', err);
-                speakerList.innerText = 'Error connecting to server: Failed to fetch';
+                speakerList.innerText = 'Error connecting to server: ' + err.message;
                 speakerList.className = 'error';
             }
         }
