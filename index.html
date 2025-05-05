@@ -4,650 +4,348 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speaker Recognition System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
         }
-        
-        .waveform {
-            background: linear-gradient(90deg, #3b82f6 50%, #e5e7eb 50%);
-            background-size: 20px 100%;
-            height: 60px;
-            position: relative;
-            overflow: hidden;
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        
-        .waveform::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 9px,
-                rgba(255,255,255,0.2) 9px,
-                rgba(255,255,255,0.2) 10px
-            );
+        h1 {
+            text-align: center;
+            color: #333;
         }
-        
-        .recording {
-            animation: pulse 1.5s infinite;
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
         }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #ddd;
+            border-radius: 4px;
         }
-        
-        .tab-active {
-            border-bottom: 3px solid #3b82f6;
-            color: #3b82f6;
-            font-weight: 600;
+        .tab.active {
+            background-color: #007BFF;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #recording-status {
+            margin-top: 10px;
+            color: #555;
+        }
+        #recent-registrations {
+            margin-top: 20px;
+        }
+        #recent-registrations ul {
+            list-style: none;
+            padding: 0;
+        }
+        #recent-registrations li {
+            padding: 5px 0;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
         }
     </style>
 </head>
-<body class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-8 max-w-md">
-        <!-- Header -->
-        <header class="mb-8">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">Speaker Recognition</h1>
-                <div class="flex space-x-2">
-                    <button class="p-2 rounded-full bg-gray-200 text-gray-700">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                    <button class="p-2 rounded-full bg-gray-200 text-gray-700">
-                        <i class="fas fa-question-circle"></i>
-                    </button>
-                </div>
+<body>
+    <div class="container">
+        <h1>Speaker Recognition System</h1>
+        <div class="tabs">
+            <div class="tab active" data-tab="register">Register</div>
+            <div class="tab" data-tab="identify">Identify</div>
+            <div class="tab" data-tab="verify">Verify</div>
+            <div class="tab" data-tab="delete">Delete</div>
+        </div>
+        <div id="register" class="tab-content active">
+            <h2>Register Speaker</h2>
+            <input type="text" id="speaker-id" placeholder="Speaker ID (e.g., SPK_001)">
+            <input type="file" id="audio-file" accept=".wav">
+            <button onclick="startRecording()">Start Recording</button>
+            <button onclick="stopRecording()">Stop Recording</button>
+            <div id="recording-status"></div>
+            <button onclick="registerSpeaker()">Register Speaker</button>
+            <div id="register-result"></div>
+            <div id="recent-registrations">
+                <h3>Recent Registrations</h3>
+                <ul id="speaker-list"></ul>
             </div>
-            
-            <!-- Tabs -->
-            <div class="flex border-b border-gray-200">
-                <button id="register-tab" class="tab-active px-4 py-2 text-sm font-medium">
-                    Register
-                </button>
-                <button id="identify-tab" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
-                    Identify
-                </button>
-                <button id="verify-tab" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
-                    Verify
-                </button>
-                <button id="manage-tab" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
-                    Manage
-                </button>
-            </div>
-        </header>
-        
-        <!-- Main Content -->
-        <main>
-            <!-- Register Tab Content -->
-            <div id="register-content" class="tab-content">
-                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Register New Speaker</h2>
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Speaker ID</label>
-                        <input type="text" id="speaker-id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter unique speaker ID">
-                    </div>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Audio Sample</label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                            <div class="space-y-1 text-center">
-                                <div class="flex text-sm text-gray-600">
-                                    <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                        <span>Upload WAV file</span>
-                                        <input id="register-audio" type="file" class="sr-only" accept=".wav">
-                                    </label>
-                                    <p class="pl-1">or drag and drop</p>
-                                </div>
-                                <p class="text-xs text-gray-500">WAV format, 16kHz, mono</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-6">
-                        <div class="flex justify-center mb-4">
-                            <button id="record-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-red-500 text-white focus:outline-none">
-                                <i class="fas fa-microphone text-xl"></i>
-                            </button>
-                        </div>
-                        <div class="waveform rounded-lg mb-2"></div>
-                        <p class="text-sm text-gray-500 text-center">Recording: <span id="recording-time">00:00</span></p>
-                    </div>
-                    
-                    <button id="register-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
-                        Register Speaker
-                    </button>
-                    <p id="register-error" class="text-red-500 text-sm mt-2 hidden"></p>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Recent Registrations</h2>
-                    <div id="recent-registrations" class="space-y-3"></div>
-                </div>
-            </div>
-            
-            <!-- Identify Tab Content -->
-            <div id="identify-content" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Identify Speaker</h2>
-                    
-                    <div class="mb-6">
-                        <div class="flex justify-center mb-4">
-                            <button id="identify-record-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-blue-500 text-white focus:outline-none">
-                                <i class="fas fa-microphone text-xl"></i>
-                            </button>
-                        </div>
-                        <div class="waveform rounded-lg mb-2"></div>
-                        <p class="text-sm text-gray-500 text-center">Recording: <span id="identify-recording-time">00:00</span></p>
-                    </div>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Or upload audio file</label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                            <div class="space-y-1 text-center">
-                                <div class="flex text-sm text-gray-600">
-                                    <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                        <span>Upload WAV file</span>
-                                        <input id="identify-audio" type="file" class="sr-only" accept=".wav">
-                                    </label>
-                                </div>
-                                <p class="text-xs text-gray-500">WAV format, 16kHz, mono</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button id="identify-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
-                        Identify Speaker
-                    </button>
-                    <p id="identify-error" class="text-red-500 text-sm mt-2 hidden"></p>
-                </div>
-                
-                <div id="identify-results" class="bg-white rounded-lg shadow-md p-6 hidden">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Identification Results</h2>
-                    <div id="identify-results-list" class="space-y-4"></div>
-                </div>
-            </div>
-            
-            <!-- Verify Tab Content -->
-            <div id="verify-content" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Verify Speaker</h2>
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Speaker ID</label>
-                        <input type="text" id="verify-speaker-id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter speaker ID to verify">
-                    </div>
-                    
-                    <div class="mb-6">
-                        <div class="flex justify-center mb-4">
-                            <button id="verify-record-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-blue-500 text-white focus:outline-none">
-                                <i class="fas fa-microphone text-xl"></i>
-                            </button>
-                        </div>
-                        <div class="waveform rounded-lg mb-2"></div>
-                        <p class="text-sm text-gray-500 text-center">Recording: <span id="verify-recording-time">00:00</span></p>
-                    </div>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Or upload audio file</label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                            <div class="space-y-1 text-center">
-                                <div class="flex text-sm text-gray-600">
-                                    <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                        <span>Upload WAV file</span>
-                                        <input id="verify-audio" type="file" class="sr-only" accept=".wav">
-                                    </label>
-                                </div>
-                                <p class="text-xs text-gray-500">WAV format, 16kHz, mono</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button id="verify-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
-                        Verify Speaker
-                    </button>
-                    <p id="verify-error" class="text-red-500 text-sm mt-2 hidden"></p>
-                </div>
-                
-                <div id="verify-results" class="bg-white rounded-lg shadow-md p-6 hidden">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Verification Results</h2>
-                    <div id="verify-results-content"></div>
-                </div>
-            </div>
-            
-            <!-- Manage Tab Content -->
-            <div id="manage-content" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Manage Speakers</h2>
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Search Speakers</label>
-                        <div class="relative">
-                            <input type="text" id="search-speakers" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search by ID">
-                            <div class="absolute left-3 top-2.5 text-gray-400">
-                                <i class="fas fa-search"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="speakers-list" class="space-y-3"></div>
-                    
-                    <div class="mt-6 flex justify-between">
-                        <button id="export-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md">
-                            <i class="fas fa-file-export mr-2"></i> Export
-                        </button>
-                        <button id="delete-all-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md">
-                            <i class="fas fa-trash-alt mr-2"></i> Delete All
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </main>
-        
-        <!-- Footer -->
-        <footer class="mt-8 text-center text-sm text-gray-500">
-            <p>Speaker Recognition System v1.0.0</p>
-            <p class="mt-1">Using MFCC features with GMM/UBM modeling</p>
-        </footer>
+        </div>
+        <div id="identify" class="tab-content">
+            <h2>Identify Speaker</h2>
+            <input type="file" id="identify-audio" accept=".wav">
+            <button onclick="identifySpeaker()">Identify Speaker</button>
+            <div id="identify-result"></div>
+        </div>
+        <div id="verify" class="tab-content">
+            <h2>Verify Speaker</h2>
+            <input type="text" id="verify-speaker-id" placeholder="Speaker ID">
+            <input type="file" id="verify-audio" accept=".wav">
+            <button onclick="verifySpeaker()">Verify Speaker</button>
+            <div id="verify-result"></div>
+        </div>
+        <div id="delete" class="tab-content">
+            <h2>Delete Speaker</h2>
+            <input type="text" id="delete-speaker-id" placeholder="Speaker ID">
+            <button onclick="deleteSpeaker()">Delete Speaker</button>
+            <div id="delete-result"></div>
+        </div>
     </div>
 
     <script>
         // Tab switching
-        document.querySelectorAll('[id$="-tab"]').forEach(tab => {
+        document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelectorAll('[id$="-tab"]').forEach(t => {
-                    t.classList.remove('tab-active');
-                    t.classList.add('text-gray-500');
-                });
-                tab.classList.add('tab-active');
-                tab.classList.remove('text-gray-500');
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.add('hidden');
-                });
-                const contentId = tab.id.replace('-tab', '-content');
-                document.getElementById(contentId).classList.remove('hidden');
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
             });
         });
 
-        // Recording functionality
+        // Audio recording
         let mediaRecorder;
-        let recordedChunks = [];
-        let recordingInterval;
-        let seconds = 0;
+        let audioChunks = [];
+        let audioBlob;
 
-        function startRecording(timerId) {
-            seconds = 0;
-            updateTimer(timerId);
-            recordingInterval = setInterval(() => {
-                seconds++;
-                updateTimer(timerId);
-            }, 1000);
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    document.getElementById('recording-status').innerText = 'Recording stopped. Ready to register.';
+                    document.getElementById('recording-status').className = 'success';
+                };
                 mediaRecorder.start();
-            });
+                document.getElementById('recording-status').innerText = 'Recording...';
+                document.getElementById('recording-status').className = '';
+            } catch (err) {
+                document.getElementById('recording-status').innerText = 'Error starting recording: ' + err.message;
+                document.getElementById('recording-status').className = 'error';
+            }
         }
 
         function stopRecording() {
-            clearInterval(recordingInterval);
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
         }
-
-        function updateTimer(timerId) {
-            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const secs = (seconds % 60).toString().padStart(2, '0');
-            document.getElementById(timerId).textContent = `${mins}:${secs}`;
-        }
-
-        // Register recording
-        document.getElementById('record-btn').addEventListener('click', function() {
-            this.classList.toggle('recording');
-            if (this.classList.contains('recording')) {
-                recordedChunks = [];
-                startRecording('recording-time');
-            } else {
-                stopRecording();
-            }
-        });
-
-        // Identify recording
-        document.getElementById('identify-record-btn').addEventListener('click', function() {
-            this.classList.toggle('recording');
-            if (this.classList.contains('recording')) {
-                recordedChunks = [];
-                startRecording('identify-recording-time');
-            } else {
-                stopRecording();
-            }
-        });
-
-        // Verify recording
-        document.getElementById('verify-record-btn').addEventListener('click', function() {
-            this.classList.toggle('recording');
-            if (this.classList.contains('recording')) {
-                recordedChunks = [];
-                startRecording('verify-recording-time');
-            } else {
-                stopRecording();
-            }
-        });
 
         // Register speaker
-        document.getElementById('register-btn').addEventListener('click', async () => {
-            const speakerId = document.getElementById('speaker-id').value;
-            const audioInput = document.getElementById('register-audio');
-            const errorElement = document.getElementById('register-error');
-            errorElement.classList.add('hidden');
-            
+        async function registerSpeaker() {
+            const speakerId = document.getElementById('speaker-id').value.trim();
+            const audioFileInput = document.getElementById('audio-file');
+            const resultDiv = document.getElementById('register-result');
+
             if (!speakerId) {
-                errorElement.textContent = 'Please enter a speaker ID';
-                errorElement.classList.remove('hidden');
+                resultDiv.innerText = 'Please enter a Speaker ID.';
+                resultDiv.className = 'error';
                 return;
             }
-            
+
             let audioFile;
-            if (recordedChunks.length > 0) {
-                audioFile = new File([new Blob(recordedChunks, { type: 'audio/wav' })], 'recording.wav');
-            } else if (audioInput.files.length > 0) {
-                audioFile = audioInput.files[0];
+            if (audioFileInput.files.length > 0) {
+                audioFile = audioFileInput.files[0];
+            } else if (audioBlob) {
+                audioFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
             } else {
-                errorElement.textContent = 'Please provide an audio file or recording';
-                errorElement.classList.remove('hidden');
+                resultDiv.innerText = 'Please upload an audio file or record audio.';
+                resultDiv.className = 'error';
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('speaker_id', speakerId);
             formData.append('audio', audioFile);
-            
+
             try {
                 const response = await fetch('/register', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
-                if (result.status === 'success') {
-                    alert(result.message);
-                    loadRecentRegistrations();
+                if (response.ok) {
+                    resultDiv.innerText = result.message;
+                    resultDiv.className = 'success';
+                    loadSpeakers();
+                    // Reset inputs
+                    document.getElementById('speaker-id').value = '';
+                    document.getElementById('audio-file').value = '';
+                    audioBlob = null;
+                    document.getElementById('recording-status').innerText = '';
                 } else {
-                    errorElement.textContent = result.detail || 'Registration failed';
-                    errorElement.classList.remove('hidden');
+                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.className = 'error';
                 }
-            } catch (error) {
-                errorElement.textContent = 'Error connecting to server';
-                errorElement.classList.remove('hidden');
+            } catch (err) {
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                resultDiv.className = 'error';
             }
-        });
+        }
 
         // Identify speaker
-        document.getElementById('identify-btn').addEventListener('click', async () => {
-            const audioInput = document.getElementById('identify-audio');
-            const errorElement = document.getElementById('identify-error');
-            errorElement.classList.add('hidden');
-            
-            let audioFile;
-            if (recordedChunks.length > 0) {
-                audioFile = new File([new Blob(recordedChunks, { type: 'audio/wav' })], 'recording.wav');
-            } else if (audioInput.files.length > 0) {
-                audioFile = audioInput.files[0];
-            } else {
-                errorElement.textContent = 'Please provide an audio file or recording';
-                errorElement.classList.remove('hidden');
+        async function identifySpeaker() {
+            const audioFileInput = document.getElementById('identify-audio');
+            const resultDiv = document.getElementById('identify-result');
+
+            if (audioFileInput.files.length === 0) {
+                resultDiv.innerText = 'Please upload an audio file.';
+                resultDiv.className = 'error';
                 return;
             }
-            
+
             const formData = new FormData();
-            formData.append('audio', audioFile);
-            
+            formData.append('audio', audioFileInput.files[0]);
+
             try {
                 const response = await fetch('/identify', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
-                if (result.status === 'success') {
-                    displayIdentifyResults(result.results);
-                    document.getElementById('identify-results').classList.remove('hidden');
-                    document.getElementById('identify-results').scrollIntoView({ behavior: 'smooth' });
+                if (response.ok) {
+                    resultDiv.innerText = `Best match: ${result.best_speaker} (${result.best_similarity}%)`;
+                    resultDiv.className = 'success';
                 } else {
-                    errorElement.textContent = result.detail || 'Identification failed';
-                    errorElement.classList.remove('hidden');
+                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.className = 'error';
                 }
-            } catch (error) {
-                errorElement.textContent = 'Error connecting to server';
-                errorElement.classList.remove('hidden');
+            } catch (err) {
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                resultDiv.className = 'error';
             }
-        });
+        }
 
         // Verify speaker
-        document.getElementById('verify-btn').addEventListener('click', async () => {
-            const speakerId = document.getElementById('verify-speaker-id').value;
-            const audioInput = document.getElementById('verify-audio');
-            const errorElement = document.getElementById('verify-error');
-            errorElement.classList.add('hidden');
-            
-            if (!speakerId) {
-                errorElement.textContent = 'Please enter a speaker ID';
-                errorElement.classList.remove('hidden');
+        async function verifySpeaker() {
+            const speakerId = document.getElementById('verify-speaker-id').value.trim();
+            const audioFileInput = document.getElementById('verify-audio');
+            const resultDiv = document.getElementById('verify-result');
+
+            if (!speakerId || audioFileInput.files.length === 0) {
+                resultDiv.innerText = 'Please enter a Speaker ID and upload an audio file.';
+                resultDiv.className = 'error';
                 return;
             }
-            
-            let audioFile;
-            if (recordedChunks.length > 0) {
-                audioFile = new File([new Blob(recordedChunks, { type: 'audio/wav' })], 'recording.wav');
-            } else if (audioInput.files.length > 0) {
-                audioFile = audioInput.files[0];
-            } else {
-                errorElement.textContent = 'Please provide an audio file or recording';
-                errorElement.classList.remove('hidden');
-                return;
-            }
-            
+
             const formData = new FormData();
             formData.append('speaker_id', speakerId);
-            formData.append('audio', audioFile);
-            
+            formData.append('audio', audioFileInput.files[0]);
+
             try {
                 const response = await fetch('/verify', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
-                if (result.status === 'success') {
-                    displayVerifyResults(result);
-                    document.getElementById('verify-results').classList.remove('hidden');
-                    document.getElementById('verify-results').scrollIntoView({ behavior: 'smooth' });
+                if (response.ok) {
+                    resultDiv.innerText = `Verified: ${result.verified}, Similarity: ${result.similarity}%`;
+                    resultDiv.className = 'success';
                 } else {
-                    errorElement.textContent = result.detail || 'Verification failed';
-                    errorElement.classList.remove('hidden');
+                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.className = 'error';
                 }
-            } catch (error) {
-                errorElement.textContent = 'Error connecting to server';
-                errorElement.classList.remove('hidden');
-            }
-        });
-
-        // Load recent registrations
-        async function loadRecentRegistrations() {
-            try {
-                const response = await fetch('/speakers');
-                const result = await response.json();
-                const container = document.getElementById('recent-registrations');
-                container.innerHTML = '';
-                if (result.speakers.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500">No recent registrations</p>';
-                } else {
-                    result.speakers.forEach(speaker => {
-                        const div = document.createElement('div');
-                        div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
-                        div.innerHTML = `
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium text-gray-900">${speaker}</p>
-                                    <p class="text-xs text-gray-500">Registered recently</p>
-                                </div>
-                            </div>
-                            <button class="text-red-500 hover:text-red-700 delete-speaker" data-id="${speaker}">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
-                        container.appendChild(div);
-                    });
-                    document.querySelectorAll('.delete-speaker').forEach(btn => {
-                        btn.addEventListener('click', async () => {
-                            const speakerId = btn.dataset.id;
-                            await deleteSpeaker(speakerId);
-                        });
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading recent registrations:', error);
-            }
-        }
-
-        // Load speakers for manage tab
-        async function loadSpeakers() {
-            try {
-                const response = await fetch('/speakers');
-                const result = await response.json();
-                const container = document.getElementById('speakers-list');
-                container.innerHTML = '';
-                if (result.speakers.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500">No speakers registered</p>';
-                } else {
-                    result.speakers.forEach(speaker => {
-                        const div = document.createElement('div');
-                        div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
-                        div.innerHTML = `
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium text-gray-900">${speaker}</p>
-                                    <p class="text-xs text-gray-500">Registered</p>
-                                </div>
-                            </div>
-                            <button class="text-red-500 hover:text-red-700 delete-speaker" data-id="${speaker}">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
-                        container.appendChild(div);
-                    });
-                    document.querySelectorAll('.delete-speaker').forEach(btn => {
-                        btn.addEventListener('click', async () => {
-                            const speakerId = btn.dataset.id;
-                            await deleteSpeaker(speakerId);
-                        });
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading speakers:', error);
+            } catch (err) {
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                resultDiv.className = 'error';
             }
         }
 
         // Delete speaker
-        async function deleteSpeaker(speakerId) {
+        async function deleteSpeaker() {
+            const speakerId = document.getElementById('delete-speaker-id').value.trim();
+            const resultDiv = document.getElementById('delete-result');
+
+            if (!speakerId) {
+                resultDiv.innerText = 'Please enter a Speaker ID.';
+                resultDiv.className = 'error';
+                return;
+            }
+
             try {
                 const response = await fetch(`/delete_speaker/${speakerId}`, {
                     method: 'DELETE'
                 });
                 const result = await response.json();
-                if (result.status === 'success') {
-                    alert(result.message);
-                    loadRecentRegistrations();
+                if (response.ok) {
+                    resultDiv.innerText = result.message;
+                    resultDiv.className = 'success';
                     loadSpeakers();
+                    document.getElementById('delete-speaker-id').value = '';
                 } else {
-                    alert(result.detail || 'Deletion failed');
+                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.className = 'error';
                 }
-            } catch (error) {
-                alert('Error connecting to server');
+            } catch (err) {
+                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                resultDiv.className = 'error';
             }
         }
 
-        // Display identify results
-        function displayIdentifyResults(results) {
-            const container = document.getElementById('identify-results-list');
-            container.innerHTML = '';
-            results.forEach(result => {
-                const color = result.similarity >= 90 ? 'green' : result.similarity >= 70 ? 'yellow' : 'red';
-                const icon = result.similarity >= 90 ? 'check' : result.similarity >= 70 ? 'user' : 'times';
-                const div = document.createElement('div');
-                div.className = 'mb-4';
-                div.innerHTML = `
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 rounded-full bg-${color}-100 flex items-center justify-center text-${color}-600">
-                                <i class="fas fa-${icon}"></i>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-900">${result.speaker_id}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-semibold text-${color}-600">${result.similarity}% match</p>
-                        </div>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-${color}-500 h-2 rounded-full" style="width: ${result.similarity}%"></div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
+        // Load recent speakers
+        async function loadSpeakers() {
+            const speakerList = document.getElementById('speaker-list');
+            try {
+                const response = await fetch('/speakers');
+                const result = await response.json();
+                if (response.ok) {
+                    speakerList.innerHTML = '';
+                    result.speakers.forEach(speaker => {
+                        const li = document.createElement('li');
+                        li.innerText = speaker;
+                        speakerList.appendChild(li);
+                    });
+                } else {
+                    speakerList.innerText = 'Error loading speakers: ' + result.detail;
+                    speakerList.className = 'error';
+                }
+            } catch (err) {
+                speakerList.innerText = 'Error connecting to server: ' + err.message;
+                speakerList.className = 'error';
+            }
         }
 
-        // Display verify results
-        function displayVerifyResults(result) {
-            const container = document.getElementById('verify-results-content');
-            container.innerHTML = '';
-            const color = result.verified ? 'green' : 'red';
-            const icon = result.verified ? 'check' : 'times';
-            const message = result.verified ? 'Verification Successful' : 'Verification Failed';
-            container.innerHTML = `
-                <div class="text-center mb-6">
-                    <div class="mx-auto w-24 h-24 rounded-full bg-${color}-100 flex items-center justify-center mb-4">
-                        <i class="fas fa-${icon} text-4xl text-${color}-600"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-1">${message}</h3>
-                    <p class="text-gray-600">Speaker ID: ${result.speaker_id}</p>
-                </div>
-                <div class="mb-4">
-                    <div class="flex justify-between mb-1">
-                        <span class="text-sm font-medium text-gray-700">Confidence Score</span>
-                        <span class="text-sm font-medium text-${color}-600">${result.similarity}%</span>
-                    </div>
-                    <div class="flex justify-between mb-1">
-                        <span class="text-sm font-medium text-gray-700">Decision Threshold</span>
-                        <span class="text-sm font-medium text-gray-900">60.0%</span>
-                    </div>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-4 mb-6">
-                    <div class="bg-${color}-500 h-4 rounded-full" style="width: ${result.similarity}%"></div>
-                </div>
-            `;
-        }
-
-        // Initial load
-        loadRecentRegistrations();
-        document.getElementById('manage-tab').addEventListener('click', loadSpeakers);
+        // Load speakers on page load
+        window.onload = loadSpeakers;
     </script>
 </body>
 </html>
