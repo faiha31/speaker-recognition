@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -213,7 +174,7 @@
                     <p id="identify-error" class="text-red-500 text-sm mt-2 hidden"></p>
                 </div>
                 
-                <div id creme="identify-results" class="bg-white rounded-lg shadow-md p-6 hidden">
+                <div id="identify-results" class="bg-white rounded-lg shadow-md p-6 hidden">
                     <h2 class="text-lg font-semibold mb-4 text-gray-800">Identification Results</h2>
                     <div id="identify-results-list" class="space-y-4"></div>
                 </div>
@@ -415,7 +376,7 @@
             formData.append('audio', audioFile);
             
             try {
-                const response = await fetch('http://localhost:8000/register', {
+                const response = await fetch('/register', {
                     method: 'POST',
                     body: formData
                 });
@@ -454,7 +415,7 @@
             formData.append('audio', audioFile);
             
             try {
-                const response = await fetch('http://localhost:8000/identify', {
+                const response = await fetch('/identify', {
                     method: 'POST',
                     body: formData
                 });
@@ -502,7 +463,7 @@
             formData.append('audio', audioFile);
             
             try {
-                const response = await fetch('http://localhost:8000/verify', {
+                const response = await fetch('/verify', {
                     method: 'POST',
                     body: formData
                 });
@@ -524,7 +485,7 @@
         // Load recent registrations
         async function loadRecentRegistrations() {
             try {
-                const response = await fetch('http://localhost:8000/speakers');
+                const response = await fetch('/speakers');
                 const result = await response.json();
                 const container = document.getElementById('recent-registrations');
                 container.innerHTML = '';
@@ -565,7 +526,7 @@
         // Load speakers for manage tab
         async function loadSpeakers() {
             try {
-                const response = await fetch('http://localhost:8000/speakers');
+                const response = await fetch('/speakers');
                 const result = await response.json();
                 const container = document.getElementById('speakers-list');
                 container.innerHTML = '';
@@ -606,7 +567,7 @@
         // Delete speaker
         async function deleteSpeaker(speakerId) {
             try {
-                const response = await fetch(`http://localhost:8000/delete_speaker/${speakerId}`, {
+                const response = await fetch(`/delete_speaker/${speakerId}`, {
                     method: 'DELETE'
                 });
                 const result = await response.json();
@@ -679,7 +640,7 @@
                     </div>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-4 mb-6">
-                    <div class="bg-${-hit}-500 h-4 rounded-full" style="width: ${result.similarity}%"></div>
+                    <div class="bg-${color}-500 h-4 rounded-full" style="width: ${result.similarity}%"></div>
                 </div>
             `;
         }

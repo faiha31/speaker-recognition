@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import aiofiles
 import io
 from datetime import datetime
@@ -37,6 +38,10 @@ if not os.path.exists(MODEL_DIR):
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Mount static files
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -367,5 +372,3 @@ async def get_speakers_endpoint():
     speakers = [row[0] for row in c.fetchall()]
     conn.close()
     return {"status": "success", "speakers": speakers}
-
-# Note: Training endpoints are omitted for simplicity. You can add them similarly.
