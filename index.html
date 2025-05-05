@@ -128,6 +128,9 @@
     </div>
 
     <script>
+        // Replace with your actual Render URL
+        const BASE_URL = 'https://your-app.onrender.com';
+
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -205,18 +208,37 @@
             });
 
             try {
-                const response = await fetch('/register', {
+                // Try relative URL first
+                let response = await fetch('/register', {
                     method: 'POST',
                     body: formData,
                     headers: {
                         'Accept': 'application/json'
                     }
                 });
-                console.log('Response:', {
+                console.log('Relative URL Response:', {
                     status: response.status,
                     statusText: response.statusText,
                     url: response.url
                 });
+
+                // If relative URL fails with 405, try absolute URL
+                if (response.status === 405) {
+                    console.log('Relative URL failed, trying absolute URL:', `${BASE_URL}/register`);
+                    response = await fetch(`${BASE_URL}/register`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    console.log('Absolute URL Response:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        url: response.url
+                    });
+                }
+
                 const result = await response.json();
                 console.log('Response data:', result);
                 if (response.ok) {
@@ -233,7 +255,7 @@
                     resultDiv.className = 'error';
                     if (response.status === 405) {
                         resultDiv.innerText += ' (Method Not Allowed: Server rejected POST request)';
-                        console.error('Method Not Allowed: Check backend configuration for /register');
+                        console.error('Method Not Allowed: Check backend /register endpoint');
                     }
                 }
             } catch (err) {
@@ -261,7 +283,10 @@
             try {
                 const response = await fetch('/identify', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
                 console.log('Response:', {
                     status: response.status,
@@ -303,7 +328,10 @@
             try {
                 const response = await fetch('/verify', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
                 console.log('Response:', {
                     status: response.status,
@@ -339,7 +367,10 @@
             console.log('Sending DELETE request to /delete_speaker/', speakerId);
             try {
                 const response = await fetch(`/delete_speaker/${speakerId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
                 console.log('Response:', {
                     status: response.status,
@@ -368,7 +399,11 @@
             const speakerList = document.getElementById('speaker-list');
             console.log('Sending GET request to /speakers');
             try {
-                const response = await fetch('/speakers');
+                const response = await fetch('/speakers', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
                 console.log('Response:', {
                     status: response.status,
                     statusText: response.statusText
