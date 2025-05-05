@@ -160,6 +160,7 @@
             } catch (err) {
                 document.getElementById('recording-status').innerText = 'Error starting recording: ' + err.message;
                 document.getElementById('recording-status').className = 'error';
+                console.error('Recording error:', err);
             }
         }
 
@@ -197,12 +198,15 @@
             formData.append('speaker_id', speakerId);
             formData.append('audio', audioFile);
 
+            console.log('Sending POST request to /register with speaker_id:', speakerId);
             try {
                 const response = await fetch('/register', {
                     method: 'POST',
                     body: formData
                 });
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
                 if (response.ok) {
                     resultDiv.innerText = result.message;
                     resultDiv.className = 'success';
@@ -213,11 +217,15 @@
                     audioBlob = null;
                     document.getElementById('recording-status').innerText = '';
                 } else {
-                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.innerText = `Error: ${result.detail || 'Unknown error'}`;
                     resultDiv.className = 'error';
+                    if (response.status === 405) {
+                        resultDiv.innerText += ' (Method Not Allowed: Check if POST is used)';
+                    }
                 }
             } catch (err) {
-                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                console.error('Fetch error:', err);
+                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
                 resultDiv.className = 'error';
             }
         }
@@ -236,21 +244,25 @@
             const formData = new FormData();
             formData.append('audio', audioFileInput.files[0]);
 
+            console.log('Sending POST request to /identify');
             try {
                 const response = await fetch('/identify', {
                     method: 'POST',
                     body: formData
                 });
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
                 if (response.ok) {
                     resultDiv.innerText = `Best match: ${result.best_speaker} (${result.best_similarity}%)`;
                     resultDiv.className = 'success';
                 } else {
-                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.innerText = `Error: ${result.detail || 'Unknown error'}`;
                     resultDiv.className = 'error';
                 }
             } catch (err) {
-                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                console.error('Fetch error:', err);
+                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
                 resultDiv.className = 'error';
             }
         }
@@ -271,21 +283,25 @@
             formData.append('speaker_id', speakerId);
             formData.append('audio', audioFileInput.files[0]);
 
+            console.log('Sending POST request to /verify with speaker_id:', speakerId);
             try {
                 const response = await fetch('/verify', {
                     method: 'POST',
                     body: formData
                 });
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
                 if (response.ok) {
                     resultDiv.innerText = `Verified: ${result.verified}, Similarity: ${result.similarity}%`;
                     resultDiv.className = 'success';
                 } else {
-                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.innerText = `Error: ${result.detail || 'Unknown error'}`;
                     resultDiv.className = 'error';
                 }
             } catch (err) {
-                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                console.error('Fetch error:', err);
+                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
                 resultDiv.className = 'error';
             }
         }
@@ -301,22 +317,26 @@
                 return;
             }
 
+            console.log('Sending DELETE request to /delete_speaker/', speakerId);
             try {
                 const response = await fetch(`/delete_speaker/${speakerId}`, {
                     method: 'DELETE'
                 });
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
                 if (response.ok) {
                     resultDiv.innerText = result.message;
                     resultDiv.className = 'success';
                     loadSpeakers();
                     document.getElementById('delete-speaker-id').value = '';
                 } else {
-                    resultDiv.innerText = 'Error: ' + result.detail;
+                    resultDiv.innerText = `Error: ${result.detail || 'Unknown error'}`;
                     resultDiv.className = 'error';
                 }
             } catch (err) {
-                resultDiv.innerText = 'Error connecting to server: ' + err.message;
+                console.error('Fetch error:', err);
+                resultDiv.innerText = 'Error connecting to server: Failed to fetch';
                 resultDiv.className = 'error';
             }
         }
@@ -324,9 +344,12 @@
         // Load recent speakers
         async function loadSpeakers() {
             const speakerList = document.getElementById('speaker-list');
+            console.log('Sending GET request to /speakers');
             try {
                 const response = await fetch('/speakers');
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
                 if (response.ok) {
                     speakerList.innerHTML = '';
                     result.speakers.forEach(speaker => {
@@ -335,17 +358,21 @@
                         speakerList.appendChild(li);
                     });
                 } else {
-                    speakerList.innerText = 'Error loading speakers: ' + result.detail;
+                    speakerList.innerText = `Error loading speakers: ${result.detail || 'Unknown error'}`;
                     speakerList.className = 'error';
                 }
             } catch (err) {
-                speakerList.innerText = 'Error connecting to server: ' + err.message;
+                console.error('Fetch error:', err);
+                speakerList.innerText = 'Error connecting to server: Failed to fetch';
                 speakerList.className = 'error';
             }
         }
 
         // Load speakers on page load
-        window.onload = loadSpeakers;
+        window.onload = () => {
+            console.log('Page loaded, fetching speakers');
+            loadSpeakers();
+        };
     </script>
 </body>
 </html>
